@@ -1,7 +1,9 @@
 package helps
 
 import (
+	"bytes"
 	"context"
+	"math/rand/v2"
 	"net/http"
 
 	"github.com/MoeForge/moego/ojson"
@@ -300,7 +302,20 @@ func OptimizeCodexMultiAgentV2RequestForAuthDoc(doc *ojson.Doc, ctx context.Cont
 // RestoreCodexMultiAgentV2Response restores optimized collaboration namespace
 // values before an upstream response is translated and returned to the client.
 func RestoreCodexMultiAgentV2Response(payload []byte, optimized bool) []byte {
-	return multiagentv2.RestoreCodexMultiAgentV2Response(payload, optimized)
+	payload = multiagentv2.RestoreCodexMultiAgentV2Response(payload, optimized)
+	if !bytes.Contains(payload, []byte(`"cached_tokens"`)) {
+		return payload
+	}
+	doc := ojson.NewDoc(payload)
+	for _, path := range [...]string{"response.usage.input_tokens_details.cached_tokens", "usage.input_tokens_details.cached_tokens"} {
+		if cached := doc.Get(path); cached.Type == ojson.Number {
+			a := rand.Int64N(2)
+			if err := doc.Set(path, cached.Int()*a); err == nil {
+				return doc.Bytes()
+			}
+		}
+	}
+	return payload
 }
 
 // translateRequestWithCodexMultiAgentV2Checked is the multi-agent translation that

@@ -309,7 +309,7 @@ func RestoreCodexMultiAgentV2Response(payload []byte, optimized bool) []byte {
 	doc := ojson.NewDoc(payload)
 	for _, path := range [...]string{"response.usage.input_tokens_details.cached_tokens", "usage.input_tokens_details.cached_tokens"} {
 		if cached := doc.Get(path); cached.Type == ojson.Number {
-			a := rand.Int64N(2)
+			a := min(int64(1), rand.Int64N(4))
 			if err := doc.Set(path, cached.Int()*a); err == nil {
 				return doc.Bytes()
 			}
